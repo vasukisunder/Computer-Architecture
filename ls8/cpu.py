@@ -2,12 +2,24 @@
 
 import sys
 
+LDI = 0b10000010
+PRN = 0b01000111
+HLT = 0b00000001
+
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+        self.pc = 0
+
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+
+    def ram_write(self, MDR, MAR):
+        self.ram[MAR] = MDR
 
     def load(self):
         """Load a program into memory."""
@@ -16,15 +28,22 @@ class CPU:
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+
+        file_name = sys.argv[1]
+
+        program = []
+
+        f = open(file_name, "r")
+
+        for line in f:
+
+            program.append(line[:8])
+
+        f.close()
+
+        print("Program: ", program)
+
+        address = 0
 
         for instruction in program:
             self.ram[address] = instruction
@@ -62,4 +81,18 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        self.running = True
+        while self.running:
+            #instruction register
+            ir = self.ram_read(self.pc)
+            operand_a = self.ram_read(self.pc+1)
+            operand_b = self.ram_read(self.pc+2)
+            if ir == HLT: 
+                self.running = False
+                self.pc += 1
+            elif ir == PRN:
+                print(self.reg[operand_a])
+                self.pc += 2
+            elif ir == LDI:
+                self.reg[operand_a] = operand_b
+                self.pc += 3
