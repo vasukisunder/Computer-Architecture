@@ -8,6 +8,10 @@ HLT = 0b00000001
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
+ADD = 0b10100000
+
 
 class CPU:
     """Main CPU class."""
@@ -23,6 +27,7 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.running = True
+        self.sp = len(self.reg) - 1
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -103,16 +108,31 @@ class CPU:
             elif ir == MUL:
                 self.alu('MUL', operand_a, operand_b)
             elif ir == PUSH:
-                self.reg[7] -= 1
-                sp = self.reg[7]
-                value = self.reg[operand_a]
-                self.ram[sp] = value
+                self.sp -= 1
+                self.reg[self.sp] = self.reg[self.ram[self.pc + 1]] 
             elif ir == POP:
-                sp = self.reg[7]
-                value = self.ram[sp]
-                self.reg[operand_a] = value
-                self.reg[7] += 1
-            if ir != self.CALL and ir != self.RET:
+                self.reg[self.ram[self.pc + 1]] = self.reg[self.sp]
+                self.sp += 1
+            elif ir == RET:
+                self.pc = self.ram[self.reg[6]]
+                self.reg[6] += 1
+            elif ir == CALL:
+                return_address = self.pc + 2
+
+                self.reg[6] -= 1
+
+                self.ram[self.reg[6]] = return_address
+
+                self.pc = self.reg[self.ram_read(self.pc + 1)]
+            elif ir == ADD:
+                num_1 = self.reg[self.ram_read(self.pc + 1)]
+                num_2 = self.reg[self.ram_read(self.pc + 2)]
+
+                self.reg[self.ram_read(self.pc + 1)] = (num_1 + num_2)
+
+
+
+            if ir != CALL and ir != RET:
                 offset = ir >> 6
                 self.pc += offset + 1
 
